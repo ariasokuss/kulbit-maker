@@ -28,10 +28,19 @@ def similarity(a, b):
     return SequenceMatcher(None, a["nom"], b["nom"]).ratio()
 
 
+def find(words, nom):
+    return next(w for w in words if w["nom"] == nom)
+
+
 def pick_pair(words, rng):
-    """Два разных слова; иногда специально подбираем созвучные."""
+    """Два разных слова; иногда специально подбираем созвучные.
+    Слово с buddy всегда идёт только со своей парой (порядок случайный)."""
     first = rng.choice(words)
-    others = [w for w in words if w is not first]
+    if "buddy" in first:
+        pair = [first, find(words, first["buddy"])]
+        rng.shuffle(pair)
+        return tuple(pair)
+    others = [w for w in words if w is not first and "buddy" not in w]
     if rng.random() < P_SOUNDALIKE:
         best = max(others, key=lambda w: similarity(first, w))
         if similarity(first, best) >= 0.6:
@@ -58,9 +67,8 @@ def make_name(data, rng=random):
         prep = rng.choice(data["prepositions"])
         tail = b[prep["case"]]
         name = f"{a['nom']} {fix_preposition(prep['word'], tail)} {tail}"
-    elif roll < P_PREPOSITION + P_ADJECTIVE and any("adj" in w for w in words):
-        adj_word = rng.choice([w for w in words if "adj" in w])
-        noun = rng.choice([w for w in words if w is not adj_word])
+    elif roll < P_PREPOSITION + P_ADJECTIVE and "adj" in a and "buddy" not in b:
+        adj_word, noun = a, b
         name = f"{adj_word['adj'][noun['gender']]} {noun['nom']}"
     else:
         name = f"{a['nom']} {b['nom']}"
