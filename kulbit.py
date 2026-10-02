@@ -13,6 +13,7 @@ WORDS_FILE = Path(__file__).with_name("words.json")
 P_PREPOSITION = 0.45  # «абманка для абамки»
 P_ADJECTIVE = 0.15  # «майнкрафтовая абамка»
 # остальное — просто два слова: «майнкрафт кульбит»
+P_PHRASE = 0.12  # фраза + слово: «нас 3 девочки со сквишем»
 P_SOUNDALIKE = 0.25  # пара созвучных слов: «абманка для абамки»
 P_SEQUEL = 0.05  # редкая приписка: «сквиш против доты 2»
 
@@ -63,7 +64,14 @@ def make_name(data, rng=random):
     a, b = pick_pair(words, rng)
     roll = rng.random()
 
-    if roll < P_PREPOSITION:
+    if data.get("phrases") and rng.random() < P_PHRASE:
+        # «о моём перерождении в абамку», «нас 3 девочки с дотой»
+        phrase = rng.choice(data["phrases"])
+        word = rng.choice([w for w in words if "buddy" not in w])
+        tail = word.get(phrase["case"], word["nom"])
+        head, _, prep = phrase["text"].rpartition(" ")
+        name = f"{head} {fix_preposition(prep, tail)} {tail}"
+    elif roll < P_PREPOSITION:
         prep = rng.choice(data["prepositions"])
         tail = b[prep["case"]]
         name = f"{a['nom']} {fix_preposition(prep['word'], tail)} {tail}"
